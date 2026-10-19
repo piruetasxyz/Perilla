@@ -68,6 +68,14 @@ namespace PerillaHardware
      * @return `true` if high, `false` if low.
      */
     bool leerPatitaDigital(uint8_t patita);
+
+    /**
+     * \~spanish
+     * @brief Devuelve el tiempo monotono de la placa en milisegundos.
+     * \~english
+     * @brief Returns monotonic board time in milliseconds.
+     */
+    uint32_t tiempoMilisegundos();
 }
 
 #endif

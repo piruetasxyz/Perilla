@@ -35,6 +35,7 @@ pico_sdk_init()
 # Build the reusable Perilla library
 add_library(Perilla
     ./../src/Perilla.cpp
+    ./../src/EncoderRotativo.cpp
     ./PicoHardware.cpp
 )
 

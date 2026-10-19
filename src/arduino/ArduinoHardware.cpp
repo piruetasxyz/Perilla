@@ -25,4 +25,9 @@ namespace PerillaHardware
     {
         return digitalRead(patita);
     }
+
+    uint32_t tiempoMilisegundos()
+    {
+        return millis();
+    }
 }

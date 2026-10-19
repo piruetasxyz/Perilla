@@ -1,47 +1,27 @@
-// leer un encoder y mostrar por usb
-// su valor de 0 a 100, la direccion del giro y los pasos acumulados
-
-// conexiones:
-// patita A (CLK) a gpio 14
-// patita B (DT) a gpio 15
-// comun del encoder a tierra (GND)
-// no hace falta resistencia externa
-// no conectes el encoder a 5V (VBUS o VSYS)
-// si el encoder tiene pulsador, ese contacto es un boton en otra patita
-
+// KY-040 en Pico: GND -> GND, VCC -> 3V3 (nunca 5V),
+// CLK -> GPIO 14, DT -> GPIO 15, SW -> GPIO 16.
 #include "Perilla.h"
-
-#include <stdio.h>
-
 #include "pico/stdlib.h"
+#include <stdio.h>
 
 int main()
 {
-    // abrir comunicacion serial por usb
     stdio_init_all();
-
-    // crear una perilla encoder en gpio 14 y gpio 15
-    Perilla perilla(14, 15, Perilla::ENCODER);
-
-    // el valor va de 0 a 100, igual que con un potenciometro
-    perilla.setRangoMapeado(0, 100);
-    // cada clic suma o resta 2
-    perilla.setSensibilidad(2);
-
+    EncoderRotativo encoder(14, 15, 16);
+    int32_t posicionImpresa = 0;
     while (true)
     {
-        // leer seguido: un giro que no se alcanza a ver no vuelve
-        perilla.leer();
-
-        if (perilla.getDireccion() == Perilla::HORARIO)
+        if (encoder.actualizar())
         {
-            printf("horario, valor: %u, pasos: %ld\n", perilla.getValorMapeado(), (long)perilla.getPasos());
+            const int32_t posicion = encoder.getPosicion();
+            if (posicion != posicionImpresa)
+            {
+                posicionImpresa = posicion;
+                printf("Posicion: %ld\n", (long)posicion);
+            }
         }
-        else if (perilla.getDireccion() == Perilla::ANTIHORARIO)
-        {
-            printf("antihorario, valor: %u, pasos: %ld\n", perilla.getValorMapeado(), (long)perilla.getPasos());
-        }
-
-        sleep_ms(1);
+        if (encoder.fuePresionado()) printf("Boton presionado\n");
+        if (encoder.fueLiberado()) printf("Boton liberado\n");
+        // Sin sleep_ms: mantener el sondeo frecuente.
     }
 }

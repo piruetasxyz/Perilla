@@ -5,9 +5,9 @@
  *
  * [English version](../en/index.html)
  *
- * Biblioteca para leer perillas (potenciometros) con microcontroladores,
- * y mapear su valor a otro rango. Funciona con placas Arduino y con placas
- * Raspberry Pi Pico, tanto desde Arduino como desde el Pico SDK.
+ * Biblioteca para leer potenciometros y encoders incrementales. La clase
+ * Perilla lee potenciometros; EncoderRotativo agrega cuadratura por sondeo
+ * y boton opcional. Hay implementaciones para Arduino y Raspberry Pi Pico SDK.
  *
  * ## Conexiones
  *
@@ -17,6 +17,12 @@
  * En Raspberry Pi Pico usa 3.3V (patita `3V3`, nunca 5V) y una de las patitas
  * con conversor analogo-digital: GPIO 26, 27 o 28. Pico lee de 0 a 4095,
  * no de 0 a 1023 como Arduino Uno.
+ *
+ * Un KY-040 entrega transiciones CLK/DT, no posicion absoluta. Conecta el
+ * comun a GND; las señales usan pull-up interno. Arduino UNO R4 WiFi: VCC
+ * a 5V, CLK a D2, DT a D3 y SW a D4. Pico SDK: VCC a 3V3 (nunca 5V), GND,
+ * GPIO 14, GPIO 15 y GPIO 16. Llama actualizar() frecuentemente; el sondeo
+ * puede perder transiciones si el loop se demora.
  *
  * ## Por donde empezar
  *
@@ -28,9 +34,9 @@
  *
  * [Versión en español](../es/index.html)
  *
- * Library for reading knobs (potentiometers) with microcontrollers, and
- * mapping their value to another range. It works with Arduino boards and with
- * Raspberry Pi Pico boards, both from Arduino and from the Pico SDK.
+ * Library for potentiometers and incremental rotary encoders. Perilla reads
+ * potentiometers; EncoderRotativo adds polled quadrature and an optional
+ * button. Implementations are provided for Arduino and Raspberry Pi Pico SDK.
  *
  * ## Wiring
  *
@@ -40,6 +46,12 @@
  * On Raspberry Pi Pico use 3.3V (the `3V3` pin, never 5V) and one of the pins
  * with an analog-to-digital converter: GPIO 26, 27 or 28. Pico reads 0 to
  * 4095, not 0 to 1023 like Arduino Uno.
+ *
+ * A KY-040 reports CLK/DT transitions, not absolute position. Connect common
+ * to GND; signals use internal pull-ups. Arduino UNO R4 WiFi: VCC to 5V, CLK
+ * to D2, DT to D3 and SW to D4. Pico SDK: VCC to 3V3 (never 5V), GND,
+ * GPIO 14, GPIO 15 and GPIO 16. Call actualizar() frequently; polling can
+ * miss transitions if the loop is delayed.
  *
  * ## Where to start
  *
@@ -80,8 +92,8 @@
 
 /**
  * \example ej05_encoder/ej05_encoder.ino
- * \~spanish Arduino: lee un encoder, su direccion y sus pasos.
- * \~english Arduino: reads an encoder, its direction and its steps.
+ * \~spanish Arduino UNO R4 WiFi: lee posicion y eventos del boton KY-040.
+ * \~english Arduino UNO R4 WiFi: reads KY-040 position and button events.
  */
 
 /**
@@ -116,6 +128,6 @@
 
 /**
  * \example ej05_encoder/main.cpp
- * \~spanish Pico SDK: lee un encoder, su direccion y sus pasos.
- * \~english Pico SDK: reads an encoder, its direction and its steps.
+ * \~spanish Pico SDK: lee posicion y eventos del boton KY-040 a 3.3 V.
+ * \~english Pico SDK: reads KY-040 position and button events at 3.3 V.
  */

@@ -2,9 +2,9 @@
 
 Biblioteca para leer perillas con microcontroladores, y mapear su valor a otro rango.
 
-Una perilla puede ser un potenciómetro o un encoder. El tipo se elige al crearla.
+`Perilla` lee potenciómetros y conserva su API actual. `EncoderRotativo` es una clase separada para encoders incrementales KY-040.
 
-Funciona con placas Arduino y con placas Raspberry Pi Pico, tanto desde Arduino como desde el Pico SDK.
+La biblioteca usa la API estándar de Arduino y declara compatibilidad con todas las arquitecturas Arduino (`architectures=*`). Para Raspberry Pi Pico se incluye una implementación propia para Pico SDK, separada de Arduino.
 
 ## Conexiones
 
@@ -50,7 +50,7 @@ Si la lectura tiembla por el ruido, `perilla.setFiltro(20)` incorpora un 20% de 
 
 ## Uso con Raspberry Pi Pico SDK
 
-La carpeta [pico/](./pico/) tiene un proyecto CMake que compila la biblioteca y un ejemplo para Pico 2. Necesitas el [Pico SDK](https://github.com/raspberrypi/pico-sdk) instalado, o la extensión Raspberry Pi Pico de VS Code.
+La carpeta [pico/](./pico/) tiene un proyecto CMake para placas Raspberry Pi Pico con Pico SDK. Selecciona el modelo con `-DPICO_BOARD=pico`, `pico_w`, `pico2` o `pico2_w` (según la placa y la versión del SDK). Necesitas el [Pico SDK](https://github.com/raspberrypi/pico-sdk) instalado, o la extensión Raspberry Pi Pico de VS Code.
 
 ```bash
 cd pico
@@ -63,6 +63,36 @@ cmake --build .
 Esto genera un archivo `.uf2` por ejemplo, como `ej00_leerPerilla.uf2`. Para cargarlo, conecta la Pico manteniendo presionado el botón BOOTSEL y copia el archivo a la unidad que aparece.
 
 En Pico, la perilla se lee de 0 a 4095 (12 bits), no de 0 a 1023 como en Arduino Uno.
+
+## Encoder incremental KY-040
+
+Un potenciómetro entrega una tensión proporcional a una posición absoluta y se lee con `Perilla`. Un encoder incremental entrega pulsos al girar: la posición se acumula desde el encendido (puede ser negativa) y no representa un ángulo absoluto.
+
+`EncoderRotativo` está declarado en el mismo `Perilla.h` que la clase `Perilla`; ambas clases conservan comportamientos independientes. Conecta CLK, DT y opcionalmente SW a GPIO; los tres usan pull-up interno y el común del encoder va a GND. El botón es activo en bajo. En Arduino UNO R4 WiFi conecta VCC → 5V, GND → GND, CLK → D2, DT → D3 y SW → D4. El ejemplo existente [ej05_encoder](./examples/ej05_encoder/ej05_encoder.ino) imprime posición y eventos del botón a 115200 baudios.
+
+En Raspberry Pi Pico conecta VCC → 3V3 (nunca 5V), GND → GND, CLK → GPIO 14, DT → GPIO 15 y SW → GPIO 16. La variante Pico SDK del ejemplo existente está en [pico/ej05_encoder/](./pico/ej05_encoder/main.cpp).
+
+```cpp
+#include "Perilla.h"
+
+EncoderRotativo encoder(2, 3, 4); // CLK, DT, SW; omite SW con -1
+encoder.setTransicionesPorPaso(4); // 1, 2 o 4 transiciones por paso
+encoder.setInvertido(true);         // opcional
+encoder.setPosicion(-10);
+
+void loop() {
+  if (encoder.actualizar()) {
+    // encoder.getPosicion() cambia en pasos válidos
+    // encoder.getDireccion() devuelve HORARIO o ANTIHORARIO
+  }
+  if (encoder.fuePresionado()) { /* evento de pulsación */ }
+  if (encoder.fueLiberado()) { /* evento de liberación */ }
+}
+```
+
+El valor predeterminado son cuatro transiciones de cuadratura por paso, apropiado para un clic completo habitual del KY-040. Si el módulo produce otro número de transiciones por clic, configura `setTransicionesPorPaso(1)`, `(2)`, `(3)` o `(4)` según corresponda. Saltos de dos bits se descartan y los rebotes vecinos que regresan al estado anterior se cancelan. El antirrebote del botón es temporal, no bloqueante, y por defecto requiere 25 ms de estabilidad.
+
+La clase sondea los pines: llama `actualizar()` en cada vuelta del `loop` y evita demoras largas o escrituras seriales lentas. Si el programa no sondea con suficiente frecuencia puede perder transiciones y pasos; un encoder mecánico rápido puede requerir interrupciones, que esta API no implementa. La lectura del botón tampoco bloquea.
 
 Para otra placa, cambia `PICO_BOARD` en [pico/CMakeLists.txt](./pico/CMakeLists.txt) (por ejemplo `pico` para la Pico original).
 
@@ -79,7 +109,7 @@ Cada ejemplo existe para Arduino, en [examples/](./examples/), y para Pico SDK, 
 | `ej02_umbral` | enciende el led de la placa cuando la perilla pasa de la mitad |
 | `ej03_dosPerillas` | lee dos perillas a la vez, en formato para el plotter serial |
 | `ej04_filtro` | suaviza la lectura con un filtro opcional |
-| `ej05_encoder` | lee un encoder: dirección del giro y pasos acumulados |
+| `ej05_encoder` | lee un encoder KY-040: posición firmada, dirección y botón |
 
 ## Referencia
 
@@ -131,6 +161,20 @@ En un encoder, el valor parte en el mínimo del rango mapeado y se detiene en lo
 
 Ejemplo en [examples/ej05_encoder/](./examples/ej05_encoder/).
 
+### API de `EncoderRotativo`
+
+| Método | Descripción |
+| --- | --- |
+| `EncoderRotativo(uint8_t clk, uint8_t dt, int16_t sw = -1)` | configura CLK, DT y botón opcional con pull-up interno |
+| `bool actualizar()` | sondea entradas, devuelve true si cambió la posición; debe llamarse frecuentemente |
+| `getDireccion() const` | sentido del último paso detectado (`HORARIO`, `ANTIHORARIO` o `QUIETA`) |
+| `int32_t getPosicion() const` / `setPosicion(int32_t)` | consulta o establece posición firmada sin topes |
+| `setTransicionesPorPaso(uint8_t)` | selecciona 1, 2 o 4 transiciones por paso |
+| `setInvertido(bool)` | invierte el signo del giro |
+| `setAntirrebote(uint16_t ms)` | intervalo de estabilidad del botón; predeterminado 25 ms |
+| `getBotonPresionado() const` | estado estable actual; true significa presionado |
+| `fuePresionado()` / `fueLiberado()` | consume el evento correspondiente una sola vez |
+
 ## Documentación
 
 La documentación se genera con [Doxygen](https://www.doxygen.nl/) a partir de los comentarios en [src/](./src/), en español y en inglés, y se publica en <https://piruetasxyz.github.io/Perilla/>.
@@ -169,6 +213,7 @@ Para agregar otra plataforma, basta con escribir otra implementación de `Hardwa
 
 ## Versiones
 
+- v0.3.0: octubre 2026, clase EncoderRotativo con cuadratura por sondeo, posición firmada y botón opcional antirrebote.
 - v0.2.0: octubre 2026, encoder como tipo de perilla, con el valor dentro del rango mapeado, y filtro opcional para el ruido.
 - v0.1.0: octubre 2026, compatibilidad con Raspberry Pi Pico SDK, y valores por defecto para los rangos.
 - v0.0.1: septiembre 2025, primera versión para Arduino.

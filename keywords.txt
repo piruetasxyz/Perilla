@@ -3,6 +3,7 @@
 ################################
 
 Perilla	KEYWORD1
+EncoderRotativo	KEYWORD1
 
 ################################
 # Metodos y funciones
@@ -14,6 +15,15 @@ setRangoMapeado	KEYWORD2
 setFiltro	KEYWORD2
 quitarFiltro	KEYWORD2
 setSensibilidad	KEYWORD2
+actualizar	KEYWORD2
+getPosicion	KEYWORD2
+setPosicion	KEYWORD2
+setTransicionesPorPaso	KEYWORD2
+setInvertido	KEYWORD2
+setAntirrebote	KEYWORD2
+getBotonPresionado	KEYWORD2
+fuePresionado	KEYWORD2
+fueLiberado	KEYWORD2
 leer	KEYWORD2
 getValor	KEYWORD2
 getValorMapeado	KEYWORD2
